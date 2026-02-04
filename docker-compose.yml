@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  github-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        RUNNER_VERSION: "2.321.0"
+    container_name: github-runner
+    restart: unless-stopped
+
+    environment:
+      # ОБЯЗАТЕЛЬНЫЕ переменные
+      - TOKEN=${TOKEN}
+      - GITHUB_URL=${GITHUB_URL}
+
+      # ОПЦИОНАЛЬНЫЕ переменные
+      - RUNNER_NAME=${RUNNER_NAME:-github-runner-docker}
+      - RUNNER_WORKDIR=${RUNNER_WORKDIR:-_work}
+      - RUNNER_GROUP=${RUNNER_GROUP:-Default}
+      - RUNNER_LABELS=${RUNNER_LABELS:-docker,self-hosted,linux}
+      - EPHEMERAL=${EPHEMERAL:-true}
+      - DISABLE_AUTO_UPDATE=${DISABLE_AUTO_UPDATE:-false}
+      - REPLACE_EXISTING=${REPLACE_EXISTING:-false}
+
+    # Монтирование Docker socket для docker-in-docker workflows
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Опционально: персистентное хранилище для _work директории
+      # - ./runner-work:/home/runner/actions-runner/_work
+
+    # Ограничения ресурсов (опционально)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+    # Политика перезапуска
+    # restart: unless-stopped  # для долгоживущих runners
+    # restart: "no"            # для ephemeral runners
+
+# Для запуска нескольких runner'ов одновременно:
+# docker-compose up -d --scale github-runner=3
