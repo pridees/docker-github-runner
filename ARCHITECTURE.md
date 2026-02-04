@@ -1,6 +1,6 @@
-# Архитектура GitHub Actions Self-Hosted Runner
+# GitHub Actions Self-Hosted Runner Architecture
 
-## Обзор компонентов
+## Component Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -25,17 +25,17 @@
 │  │                                                        │  │
 │  │  ┌──────────────────────────────────────────────┐   │  │
 │  │  │  entrypoint.sh                                │   │  │
-│  │  │  - Читает TOKEN из env                        │   │  │
-│  │  │  - Регистрирует runner (config.sh)           │   │  │
-│  │  │  - Запускает runner (run.sh)                 │   │  │
-│  │  │  - Обрабатывает сигналы (cleanup)            │   │  │
+│  │  │  - Reads TOKEN from env                       │   │  │
+│  │  │  - Registers runner (config.sh)              │   │  │
+│  │  │  - Starts runner (run.sh)                    │   │  │
+│  │  │  - Handles signals (cleanup)                 │   │  │
 │  │  └──────────────────────────────────────────────┘   │  │
 │  │                                                        │  │
 │  │  ┌──────────────────────────────────────────────┐   │  │
 │  │  │  GitHub Actions Runner                        │   │  │
-│  │  │  - Polling для новых jobs                     │   │  │
-│  │  │  - Выполнение workflow steps                  │   │  │
-│  │  │  - Отправка логов                             │   │  │
+│  │  │  - Polling for new jobs                       │   │  │
+│  │  │  - Executing workflow steps                   │   │  │
+│  │  │  - Sending logs                               │   │  │
 │  │  └──────────────────────────────────────────────┘   │  │
 │  │                                                        │  │
 │  │  User: runner (non-root)                             │  │
@@ -47,60 +47,60 @@
 │               │                                            │
 │  ┌────────────▼───────────────────────────────────────┐  │
 │  │         Docker Daemon                               │  │
-│  │  - Выполнение docker commands из workflows         │  │
+│  │  - Executing docker commands from workflows        │  │
 │  │  - Build, run, push containers                      │  │
 │  └────────────────────────────────────────────────────┘  │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## Жизненный цикл Runner'а
+## Runner Lifecycle
 
-### 1. Инициализация (Startup)
+### 1. Initialization (Startup)
 
 ```
 Container Start
     ↓
 entrypoint.sh
     ↓
-Проверка переменных окружения
-    ├─ TOKEN (обязательно)
-    ├─ GITHUB_URL (обязательно)
-    └─ Опциональные (RUNNER_NAME, LABELS, etc.)
+Check environment variables
+    ├─ TOKEN (required)
+    ├─ GITHUB_URL (required)
+    └─ Optional (RUNNER_NAME, LABELS, etc.)
     ↓
 config.sh --unattended
-    ├─ Регистрация в GitHub
-    ├─ Получение runner ID
-    └─ Сохранение конфигурации (.runner, .credentials)
+    ├─ Register with GitHub
+    ├─ Get runner ID
+    └─ Save configuration (.runner, .credentials)
     ↓
 run.sh
-    ├─ Подключение к GitHub
-    ├─ Long-polling для jobs
+    ├─ Connect to GitHub
+    ├─ Long-polling for jobs
     └─ Execution loop
 ```
 
-### 2. Выполнение Job
+### 2. Job Execution
 
 ```
-GitHub отправляет job
+GitHub sends job
     ↓
-Runner получает job
+Runner receives job
     ↓
-Создание рабочей директории (_work)
+Create working directory (_work)
     ↓
-Клонирование репозитория
+Clone repository
     ↓
-Выполнение steps
+Execute steps
     ├─ Setup actions (checkout, setup-node, etc.)
     ├─ Run commands
-    └─ Docker commands (через mounted socket)
+    └─ Docker commands (via mounted socket)
     ↓
-Отправка логов в GitHub
+Send logs to GitHub
     ↓
-Очистка рабочей директории
+Clean up working directory
     ↓
-[Ephemeral] Удаление runner
-[Non-ephemeral] Ожидание следующего job
+[Ephemeral] Remove runner
+[Non-ephemeral] Wait for next job
 ```
 
 ### 3. Graceful Shutdown
@@ -108,17 +108,17 @@ Runner получает job
 ```
 SIGTERM/SIGINT
     ↓
-trap в entrypoint.sh
+trap in entrypoint.sh
     ↓
 cleanup()
-    ├─ Завершение текущего job (если есть)
+    ├─ Finish current job (if any)
     ├─ config.sh remove --token
-    └─ Удаление runner из GitHub
+    └─ Remove runner from GitHub
     ↓
 Container stop
 ```
 
-## Взаимодействие с GitHub
+## GitHub Integration
 
 ### API Endpoints
 
@@ -135,21 +135,21 @@ GET  https://api.github.com/repos/:owner/:repo/actions/runners/:runner_id
 DELETE https://api.github.com/repos/:owner/:repo/actions/runners/:runner_id
 ```
 
-### Аутентификация
+### Authentication
 
-1. **Registration Token** (кратковременный)
-   - Действителен: 1 час
-   - Используется: для регистрации нового runner'а
-   - Получение: через UI или API с PAT
+1. **Registration Token** (short-lived)
+   - Valid for: 1 hour
+   - Used for: registering new runner
+   - Obtained via: UI or API with PAT
 
-2. **Runner Credentials** (долговременный)
-   - Создается при регистрации
-   - Хранится: `.credentials` и `.runner`
-   - Используется: для polling и выполнения jobs
+2. **Runner Credentials** (long-lived)
+   - Created during registration
+   - Stored in: `.credentials` and `.runner`
+   - Used for: polling and job execution
 
-## Безопасность
+## Security
 
-### Изоляция
+### Isolation
 
 ```
 ┌─────────────────────────────────────────┐
@@ -167,61 +167,61 @@ DELETE https://api.github.com/repos/:owner/:repo/actions/runners/:runner_id
 └─────────────────────────────────────────┘
 ```
 
-### Риски и Митигация
+### Risks and Mitigation
 
-| Риск | Описание | Митигация |
-|------|----------|-----------|
-| Docker Socket Access | Полный доступ к Docker daemon = root на хосте | - Используйте только для private repos<br>- Изолируйте хост<br>- Используйте Docker rootless mode |
-| Malicious Code | Code injection через fork PR | - Только private repos<br>- Review approval для workflows<br>- Ограничение permissions |
-| Token Exposure | Утечка TOKEN или credentials | - Short-lived tokens<br>- Ephemeral runners<br>- Secrets management |
-| Resource Exhaustion | Job может исчерпать ресурсы | - Docker resource limits<br>- Timeout для jobs<br>- Monitoring |
+| Risk | Description | Mitigation |
+|------|-------------|------------|
+| Docker Socket Access | Full Docker daemon access = root on host | - Use only for private repos<br>- Isolate host<br>- Use Docker rootless mode |
+| Malicious Code | Code injection via fork PR | - Private repos only<br>- Review approval for workflows<br>- Limit permissions |
+| Token Exposure | TOKEN or credentials leak | - Short-lived tokens<br>- Ephemeral runners<br>- Secrets management |
+| Resource Exhaustion | Job can exhaust resources | - Docker resource limits<br>- Job timeouts<br>- Monitoring |
 
-## Режимы работы
+## Operating Modes
 
-### Ephemeral Mode (Рекомендуется)
+### Ephemeral Mode (Recommended)
 
 ```
-Контейнер запускается
+Container starts
     ↓
-Регистрация runner (--ephemeral)
+Register runner (--ephemeral)
     ↓
-Ожидание job
+Wait for job
     ↓
-Выполнение ОДНОГО job
+Execute ONE job
     ↓
-Автоматическое удаление runner
+Automatically remove runner
     ↓
-Контейнер завершается
+Container exits
 ```
 
-**Преимущества:**
-- Чистое окружение для каждого job
-- Меньше риск накопления артефактов
-- Проще масштабирование
-- Лучше безопасность
+**Advantages:**
+- Clean environment for each job
+- Less risk of artifact accumulation
+- Easier scaling
+- Better security
 
 ### Persistent Mode
 
 ```
-Контейнер запускается
+Container starts
     ↓
-Регистрация runner
+Register runner
     ↓
-Бесконечный цикл:
-    ├─ Ожидание job
-    ├─ Выполнение job
-    ├─ Очистка
-    └─ Повтор
+Infinite loop:
+    ├─ Wait for job
+    ├─ Execute job
+    ├─ Cleanup
+    └─ Repeat
 ```
 
-**Использование:**
-- Для тяжелых сетапов (большие dependencies)
-- Для быстрого отклика (нет cold start)
-- Для кастомного окружения
+**Use cases:**
+- Heavy setups (large dependencies)
+- Fast response (no cold start)
+- Custom environment
 
-## Масштабирование
+## Scaling
 
-### Вертикальное (Single Host)
+### Vertical (Single Host)
 
 ```bash
 docker-compose up -d --scale github-runner=5
@@ -236,7 +236,7 @@ Host
 └─ github-runner-5
 ```
 
-### Горизонтальное (Multiple Hosts)
+### Horizontal (Multiple Hosts)
 
 ```
 Load Balancer / Orchestrator
@@ -257,9 +257,9 @@ Load Balancer / Orchestrator
 - Nomad
 - Custom scripts
 
-## Мониторинг
+## Monitoring
 
-### Метрики для отслеживания
+### Metrics to Track
 
 ```yaml
 Runner Level:
@@ -280,7 +280,7 @@ Host Level:
   - Resource utilization
 ```
 
-### Логирование
+### Logging
 
 ```
 GitHub:
@@ -296,24 +296,24 @@ Host:
   - System logs
 ```
 
-## Переменные окружения
+## Environment Variables
 
-### Обязательные
+### Required
 
-- `TOKEN` - Registration token от GitHub
-- `GITHUB_URL` - URL репозитория или организации
+- `TOKEN` - Registration token from GitHub
+- `GITHUB_URL` - Repository or organization URL
 
-### Опциональные
+### Optional
 
-- `RUNNER_NAME` - Имя runner'а
-- `RUNNER_WORKDIR` - Рабочая директория
-- `RUNNER_GROUP` - Группа runner'ов
-- `RUNNER_LABELS` - Метки (labels)
-- `EPHEMERAL` - Ephemeral режим
-- `DISABLE_AUTO_UPDATE` - Отключение автообновлений
-- `REPLACE_EXISTING` - Замена существующего runner'а
+- `RUNNER_NAME` - Runner name
+- `RUNNER_WORKDIR` - Working directory
+- `RUNNER_GROUP` - Runner group
+- `RUNNER_LABELS` - Labels
+- `EPHEMERAL` - Ephemeral mode
+- `DISABLE_AUTO_UPDATE` - Disable auto-updates
+- `REPLACE_EXISTING` - Replace existing runner
 
-## Директории и файлы
+## Directories and Files
 
 ```
 /home/runner/actions-runner/
@@ -330,26 +330,26 @@ Host:
 └── _diag/                   # Diagnostic logs
 ```
 
-## Обновление Runner
+## Runner Updates
 
-### Автоматическое (по умолчанию)
+### Automatic (default)
 
-Runner автоматически обновляется между jobs:
-1. Runner завершает job
-2. Проверяет наличие обновлений
-3. Скачивает и устанавливает новую версию
-4. Перезапускается
+Runner automatically updates between jobs:
+1. Runner finishes job
+2. Checks for updates
+3. Downloads and installs new version
+4. Restarts
 
-### Ручное
+### Manual
 
 ```bash
-# Обновление Docker образа
+# Update Docker image
 docker build --build-arg RUNNER_VERSION=2.321.0 -t github-runner .
 docker-compose down
 docker-compose up -d
 ```
 
-## Интеграция с CI/CD
+## CI/CD Integration
 
 ### Webhook-based Scaling
 
@@ -375,13 +375,13 @@ if [ $QUEUE_LENGTH -gt 5 ]; then
 fi
 ```
 
-## Дальнейшее развитие
+## Future Improvements
 
-### Возможные улучшения
+### Possible Enhancements
 
-1. **Auto-token refresh** - Автоматическое обновление токена через API
-2. **Health checks** - Проверка здоровья runner'а
-3. **Metrics export** - Экспорт метрик в Prometheus
-4. **Custom images** - Специализированные образы для разных задач
-5. **Runner pools** - Пулы runner'ов с разными возможностями
-6. **Cost tracking** - Отслеживание стоимости запусков
+1. **Auto-token refresh** - Automatic token refresh via API
+2. **Health checks** - Runner health monitoring
+3. **Metrics export** - Export metrics to Prometheus
+4. **Custom images** - Specialized images for different tasks
+5. **Runner pools** - Pools of runners with different capabilities
+6. **Cost tracking** - Track execution costs

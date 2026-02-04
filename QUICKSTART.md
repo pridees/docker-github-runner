@@ -1,68 +1,68 @@
 # Quick Start Guide
 
-Быстрый старт для запуска GitHub Actions Runner в Docker за 5 минут.
+Get your GitHub Actions Runner running in Docker in 5 minutes.
 
-## Шаг 1: Клонируйте репозиторий
+## Step 1: Clone the repository
 
 ```bash
 git clone <your-repo-url>
 cd docker-github-runner
 ```
 
-## Шаг 2: Создайте .env файл
+## Step 2: Create .env file
 
 ```bash
 cp .env.example .env
 ```
 
-## Шаг 3: Получите Registration Token
+## Step 3: Get Registration Token
 
-### Вариант A: Через GitHub UI (Простой)
+### Option A: Via GitHub UI (Simple)
 
-1. Откройте GitHub:
-   - **Для репозитория**: `https://github.com/OWNER/REPO/settings/actions/runners/new`
-   - **Для организации**: `https://github.com/organizations/ORG/settings/actions/runners/new`
+1. Open GitHub:
+   - **For repository**: `https://github.com/OWNER/REPO/settings/actions/runners/new`
+   - **For organization**: `https://github.com/organizations/ORG/settings/actions/runners/new`
 
-2. Выберите Linux и скопируйте токен из команды:
+2. Select Linux and copy the token from the command:
    ```bash
    ./config.sh --url https://github.com/... --token YOUR_TOKEN
    ```
 
-3. Вставьте токен в `.env`:
+3. Paste the token in `.env`:
    ```bash
    TOKEN=YOUR_TOKEN_HERE
    GITHUB_URL=https://github.com/your-org/your-repo
    ```
 
-### Вариант B: Через API (Автоматический)
+### Option B: Via API (Automatic)
 
-1. Создайте Personal Access Token:
-   - Откройте: https://github.com/settings/tokens/new
-   - Scopes: `repo` (для репозитория) или `admin:org` (для организации)
-   - Скопируйте токен
+1. Create Personal Access Token:
+   - Open: https://github.com/settings/tokens/new
+   - Scopes: `repo` (for repository) or `admin:org` (for organization)
+   - Copy the token
 
-2. Используйте скрипт:
+2. Use the script:
    ```bash
    export GITHUB_TOKEN=ghp_your_personal_access_token
 
-   # Для репозитория
+   # For repository
    ./get-token.sh repo OWNER REPO
 
-   # Для организации
+   # For organization
    ./get-token.sh org ORG_NAME
    ```
 
-   Скрипт автоматически обновит `.env` файл.
+   The script will automatically update the `.env` file.
 
-## Шаг 4: Запустите Runner
+## Step 4: Start the Runner
 
-### Вариант A: Docker Compose (Рекомендуется)
+### Option A: Docker Compose (Recommended)
 
 ```bash
 docker-compose up -d
 ```
 
-### Вариант B: Docker Run
+### Option B: Docker Run
 
 ```bash
 docker build -t github-runner .
@@ -74,29 +74,29 @@ docker run -d \
   github-runner
 ```
 
-### Вариант C: Makefile
+### Option C: Makefile
 
 ```bash
 make build
 make run
 ```
 
-## Шаг 5: Проверьте статус
+## Step 5: Check Status
 
 ```bash
-# Логи
+# Logs
 docker-compose logs -f
-# или
+# or
 docker logs -f github-runner
 
-# Статус в GitHub
-# Откройте: Settings → Actions → Runners
-# Вы должны увидеть ваш runner со статусом "Idle"
+# Status in GitHub
+# Open: Settings → Actions → Runners
+# You should see your runner with status "Idle"
 ```
 
-## Шаг 6: Используйте в Workflow
+## Step 6: Use in Workflow
 
-Создайте `.github/workflows/test.yml`:
+Create `.github/workflows/test.yml`:
 
 ```yaml
 name: Test Self-Hosted Runner
@@ -117,73 +117,73 @@ jobs:
           docker --version
 ```
 
-Сделайте commit и push - job запустится на вашем runner!
+Commit and push - the job will run on your runner!
 
 ## Troubleshooting
 
-### Token expired (Токен истек)
+### Token expired
 
-Registration token действителен только 1 час. Получите новый:
+Registration token is valid for only 1 hour. Get a new one:
 
 ```bash
-./get-token.sh repo OWNER REPO  # обновит .env
-docker-compose restart          # перезапустит runner
+./get-token.sh repo OWNER REPO  # updates .env
+docker-compose restart          # restarts runner
 ```
 
-### Runner не появляется в GitHub
+### Runner doesn't appear in GitHub
 
-1. Проверьте логи: `docker-compose logs`
-2. Проверьте TOKEN и GITHUB_URL в `.env`
-3. Убедитесь, что у вас есть права на добавление runner'ов
+1. Check logs: `docker-compose logs`
+2. Verify TOKEN and GITHUB_URL in `.env`
+3. Ensure you have permissions to add runners
 
 ### Permission denied (Docker socket)
 
 ```bash
 # Linux
 sudo usermod -aG docker $USER
-# Перелогиньтесь после этого
+# Re-login after this
 
 # macOS
-# Убедитесь, что Docker Desktop запущен
+# Ensure Docker Desktop is running
 ```
 
-## Полезные команды
+## Useful Commands
 
 ```bash
-# Просмотр логов
+# View logs
 make logs
-# или
+# or
 docker-compose logs -f
 
-# Остановка
+# Stop
 make stop
-# или
+# or
 docker-compose down
 
-# Перезапуск
+# Restart
 make restart
-# или
+# or
 docker-compose restart
 
-# Проверка конфигурации
+# Check configuration
 make test
 
-# Очистка
+# Cleanup
 make clean
 ```
 
-## Что дальше?
+## What's Next?
 
-- Прочитайте полную документацию в [README.md](README.md)
-- Настройте кастомные labels в `.env`
-- Запустите несколько runner'ов: `docker-compose up -d --scale github-runner=3`
-- Настройте автоматическое обновление токена через GitHub API
+- Read full documentation in [README.md](README.md)
+- Configure custom labels in `.env`
+- Run multiple runners: `docker-compose up -d --scale github-runner=3`
+- Set up automatic token refresh via GitHub API
 
-## Важно
+## Important Notes
 
-- ⚠️ Registration token действителен только 1 час
-- ⚠️ Не используйте self-hosted runners для публичных репозиториев
-- ✅ Рекомендуется использовать ephemeral режим (`EPHEMERAL=true`)
-- ✅ Runner автоматически удаляется из GitHub при остановке контейнера
+- ⚠️ Registration token is valid for only 1 hour
+- ⚠️ Do not use self-hosted runners for public repositories
+- ✅ Recommended to use ephemeral mode (`EPHEMERAL=true`)
+- ✅ Runner is automatically removed from GitHub when container stops
 
-Готово! Ваш self-hosted runner запущен и готов к работе. 🚀
+Done! Your self-hosted runner is up and running. 🚀

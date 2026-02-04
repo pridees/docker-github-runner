@@ -1,58 +1,58 @@
 # GitHub Actions Self-Hosted Runner in Docker
 
-Docker-контейнер для запуска GitHub Actions self-hosted runner. Поддерживает автоматическую регистрацию и graceful shutdown.
+Docker container for running GitHub Actions self-hosted runner. Supports automatic registration and graceful shutdown.
 
-## Особенности
+## Features
 
-- ✅ Автоматическая регистрация runner'а при старте контейнера
-- ✅ Graceful shutdown с корректным удалением runner'а из GitHub
-- ✅ Поддержка ephemeral режима (одноразовые runner'ы)
-- ✅ Docker-in-Docker поддержка для workflows с Docker
-- ✅ Безопасность: работа от непривилегированного пользователя
-- ✅ Настраиваемые labels и группы runner'ов
-- ✅ Актуальная версия Ubuntu 22.04 и GitHub Actions Runner
+- ✅ Automatic runner registration on container start
+- ✅ Graceful shutdown with proper runner removal from GitHub
+- ✅ Ephemeral mode support (single-use runners)
+- ✅ Docker-in-Docker support for Docker workflows
+- ✅ Security: runs as non-privileged user
+- ✅ Customizable labels and runner groups
+- ✅ Latest Ubuntu 22.04 and GitHub Actions Runner
 
-## Требования
+## Requirements
 
 - Docker 20.10+
-- Docker Compose 2.0+ (опционально)
-- Registration token от GitHub (действителен 1 час)
+- Docker Compose 2.0+ (optional)
+- Registration token from GitHub (valid for 1 hour)
 
-## Получение Registration Token
+## Getting Registration Token
 
-### Для репозитория:
+### For Repository:
 
-1. Перейдите в Settings → Actions → Runners
-2. Нажмите "New self-hosted runner"
-3. Скопируйте токен из команды `./config.sh --url ... --token YOUR_TOKEN`
+1. Go to Settings → Actions → Runners
+2. Click "New self-hosted runner"
+3. Copy the token from the command `./config.sh --url ... --token YOUR_TOKEN`
 
-### Для организации:
+### For Organization:
 
-1. Перейдите в Organization Settings → Actions → Runners
-2. Нажмите "New runner"
-3. Скопируйте токен
+1. Go to Organization Settings → Actions → Runners
+2. Click "New runner"
+3. Copy the token
 
-### Через GitHub API:
+### Via GitHub API:
 
 ```bash
-# Для репозитория
+# For repository
 curl -X POST \
   -H "Authorization: token YOUR_PAT" \
   -H "Accept: application/vnd.github.v3+json" \
   https://api.github.com/repos/OWNER/REPO/actions/runners/registration-token
 
-# Для организации
+# For organization
 curl -X POST \
   -H "Authorization: token YOUR_PAT" \
   -H "Accept: application/vnd.github.v3+json" \
   https://api.github.com/orgs/ORG/actions/runners/registration-token
 ```
 
-**Важно:** Personal Access Token (PAT) должен иметь scope `repo` (для репозитория) или `admin:org` (для организации).
+**Important:** Personal Access Token (PAT) must have `repo` scope (for repository) or `admin:org` (for organization).
 
-## Быстрый старт
+## Quick Start
 
-### Вариант 1: Docker Run
+### Option 1: Docker Run
 
 ```bash
 docker build -t github-runner .
@@ -65,55 +65,55 @@ docker run -d \
   github-runner
 ```
 
-### Вариант 2: Docker Compose
+### Option 2: Docker Compose
 
-1. Скопируйте `.env.example` в `.env`:
+1. Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
 
-2. Отредактируйте `.env` и укажите ваши значения:
+2. Edit `.env` and set your values:
 ```bash
 TOKEN=your_token_here
 GITHUB_URL=https://github.com/your-org/your-repo
 ```
 
-3. Запустите контейнер:
+3. Start the container:
 ```bash
 docker-compose up -d
 ```
 
-4. Проверьте логи:
+4. Check logs:
 ```bash
 docker-compose logs -f
 ```
 
-## Переменные окружения
+## Environment Variables
 
-### Обязательные
+### Required
 
-| Переменная | Описание | Пример |
-|-----------|----------|--------|
-| `TOKEN` | Registration token от GitHub (действителен 1 час) | `ABCDEFGHIJKLMNOPQRSTUVWXYZ` |
-| `GITHUB_URL` | URL репозитория или организации | `https://github.com/owner/repo` |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `TOKEN` | Registration token from GitHub (valid for 1 hour) | `ABCDEFGHIJKLMNOPQRSTUVWXYZ` |
+| `GITHUB_URL` | Repository or organization URL | `https://github.com/owner/repo` |
 
-### Опциональные
+### Optional
 
-| Переменная | Описание | По умолчанию |
-|-----------|----------|--------------|
-| `RUNNER_NAME` | Имя runner'а | hostname контейнера |
-| `RUNNER_WORKDIR` | Рабочая директория | `_work` |
-| `RUNNER_GROUP` | Группа runner'ов | `Default` |
-| `RUNNER_LABELS` | Метки через запятую | `docker,self-hosted` |
-| `EPHEMERAL` | Ephemeral режим (одноразовый) | `true` |
-| `DISABLE_AUTO_UPDATE` | Отключить автообновления | `false` |
-| `REPLACE_EXISTING` | Заменить существующий runner | `false` |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RUNNER_NAME` | Runner name | container hostname |
+| `RUNNER_WORKDIR` | Working directory | `_work` |
+| `RUNNER_GROUP` | Runner group | `Default` |
+| `RUNNER_LABELS` | Comma-separated labels | `docker,self-hosted` |
+| `EPHEMERAL` | Ephemeral mode (single-use) | `true` |
+| `DISABLE_AUTO_UPDATE` | Disable auto-updates | `false` |
+| `REPLACE_EXISTING` | Replace existing runner | `false` |
 
-## Примеры использования
+## Usage Examples
 
-### Ephemeral Runner (рекомендуется для Docker)
+### Ephemeral Runner (recommended for Docker)
 
-Ephemeral runner обрабатывает только один job и затем удаляется:
+Ephemeral runner processes only one job and then removes itself:
 
 ```bash
 docker run -d \
@@ -124,7 +124,7 @@ docker run -d \
   github-runner
 ```
 
-### Постоянный Runner
+### Persistent Runner
 
 ```bash
 docker run -d \
@@ -137,7 +137,7 @@ docker run -d \
   github-runner
 ```
 
-### Кастомные Labels
+### Custom Labels
 
 ```bash
 docker run -d \
@@ -148,15 +148,15 @@ docker run -d \
   github-runner
 ```
 
-### Запуск нескольких Runner'ов
+### Running Multiple Runners
 
 ```bash
 docker-compose up -d --scale github-runner=3
 ```
 
-## Использование в Workflows
+## Using in Workflows
 
-После запуска runner'а используйте его в своих GitHub Actions workflows:
+After starting the runner, use it in your GitHub Actions workflows:
 
 ```yaml
 name: CI
@@ -165,7 +165,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: [self-hosted, docker]  # Используйте ваши labels
+    runs-on: [self-hosted, docker]  # Use your labels
 
     steps:
       - uses: actions/checkout@v4
@@ -178,7 +178,7 @@ jobs:
 
 ## Docker-in-Docker
 
-Контейнер монтирует Docker socket хоста, что позволяет запускать Docker команды в workflows:
+The container mounts the host's Docker socket, allowing Docker commands in workflows:
 
 ```yaml
 jobs:
@@ -195,19 +195,19 @@ jobs:
         run: docker run myapp npm test
 ```
 
-## Безопасность
+## Security
 
-⚠️ **Важные соображения безопасности:**
+⚠️ **Important security considerations:**
 
-1. **Не используйте self-hosted runners для публичных репозиториев** - вредоносный код из fork'ов может выполниться на вашей инфраструктуре
-2. **Docker socket** - монтирование `/var/run/docker.sock` дает полный доступ к Docker хосту
-3. **Изоляция** - используйте отдельные runner'ы для критичных проектов
-4. **Ephemeral режим** - рекомендуется для уменьшения поверхности атаки
-5. **Сетевая изоляция** - рассмотрите использование отдельных сетей для runner'ов
+1. **Do not use self-hosted runners for public repositories** - malicious code from forks can execute on your infrastructure
+2. **Docker socket** - mounting `/var/run/docker.sock` gives full access to Docker host
+3. **Isolation** - use separate runners for critical projects
+4. **Ephemeral mode** - recommended to reduce attack surface
+5. **Network isolation** - consider using separate networks for runners
 
-## Мониторинг и логи
+## Monitoring and Logs
 
-### Просмотр логов
+### Viewing Logs
 
 ```bash
 # Docker
@@ -217,45 +217,45 @@ docker logs -f github-runner
 docker-compose logs -f
 ```
 
-### Проверка статуса
+### Checking Status
 
-Проверьте статус runner'а в GitHub:
-- Репозиторий: Settings → Actions → Runners
-- Организация: Organization Settings → Actions → Runners
+Check runner status in GitHub:
+- Repository: Settings → Actions → Runners
+- Organization: Organization Settings → Actions → Runners
 
-## Обновление Runner
+## Updating Runner
 
-### Автоматическое обновление
+### Automatic Updates
 
-По умолчанию runner автоматически обновляется. Чтобы отключить:
+By default, the runner updates automatically. To disable:
 
 ```bash
 -e DISABLE_AUTO_UPDATE=true
 ```
 
-### Обновление Docker образа
+### Updating Docker Image
 
 ```bash
-# Пересоберите образ с новой версией
+# Rebuild image with new version
 docker build --build-arg RUNNER_VERSION=2.321.0 -t github-runner .
 
-# Или обновите версию в Dockerfile и пересоберите
+# Or update version in Dockerfile and rebuild
 docker-compose build --no-cache
 docker-compose up -d
 ```
 
-## Устранение неполадок
+## Troubleshooting
 
-### Runner не регистрируется
+### Runner not registering
 
-1. Проверьте, что токен действителен (срок действия 1 час)
-2. Проверьте правильность GITHUB_URL
-3. Убедитесь, что у вас есть права на добавление runner'ов
+1. Check that the token is valid (expires after 1 hour)
+2. Verify GITHUB_URL is correct
+3. Ensure you have permissions to add runners
 
-### Runner не удаляется при остановке
+### Runner not removed on stop
 
 ```bash
-# Вручную удалите runner через GitHub UI или API
+# Manually remove runner via GitHub UI or API
 curl -X DELETE \
   -H "Authorization: token YOUR_PAT" \
   https://api.github.com/repos/OWNER/REPO/actions/runners/RUNNER_ID
@@ -263,17 +263,17 @@ curl -X DELETE \
 
 ### Docker permission denied
 
-Убедитесь, что Docker socket доступен:
+Ensure Docker socket is accessible:
 ```bash
 ls -la /var/run/docker.sock
 ```
 
-## Ссылки
+## Links
 
 - [GitHub Actions Self-Hosted Runners Documentation](https://docs.github.com/actions/hosting-your-own-runners)
 - [Self-Hosted Runner API](https://docs.github.com/rest/actions/self-hosted-runners)
 - [GitHub Runner Releases](https://github.com/actions/runner/releases)
 
-## Лицензия
+## License
 
 MIT
