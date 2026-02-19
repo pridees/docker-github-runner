@@ -29,12 +29,15 @@ trap 'cleanup; exit 143' TERM
 # Настройка доступа к Docker socket
 if [ -S /var/run/docker.sock ]; then
     DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
-    if ! getent group docker > /dev/null 2>&1; then
-        sudo groupadd -g "${DOCKER_GID}" docker
-    else
+    if [ "${DOCKER_GID}" = "0" ]; then
+        sudo usermod -aG root runner
+    elif getent group docker > /dev/null 2>&1; then
         sudo groupmod -g "${DOCKER_GID}" docker
+        sudo usermod -aG docker runner
+    else
+        sudo groupadd -g "${DOCKER_GID}" docker
+        sudo usermod -aG docker runner
     fi
-    sudo usermod -aG docker runner
     log "Docker socket detected (GID: ${DOCKER_GID}), access configured"
 fi
 
