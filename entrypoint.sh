@@ -26,6 +26,18 @@ cleanup() {
 trap 'cleanup; exit 130' INT
 trap 'cleanup; exit 143' TERM
 
+# Настройка доступа к Docker socket
+if [ -S /var/run/docker.sock ]; then
+    DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
+    if ! getent group docker > /dev/null 2>&1; then
+        sudo groupadd -g "${DOCKER_GID}" docker
+    else
+        sudo groupmod -g "${DOCKER_GID}" docker
+    fi
+    sudo usermod -aG docker runner
+    log "Docker socket detected (GID: ${DOCKER_GID}), access configured"
+fi
+
 # Проверка обязательных переменных окружения
 log "Checking required environment variables..."
 
